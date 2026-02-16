@@ -16,9 +16,9 @@ import {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-white/80 backdrop-blur-sm">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 md:h-16 max-w-6xl items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-foreground" strokeWidth={1.5} />
@@ -207,7 +207,7 @@ export default function LandingPage() {
             ].map((feature) => (
               <div
                 key={feature.title}
-                className="rounded border border-border bg-white p-6 hover:border-foreground/20 transition-colors"
+                className="rounded border border-border bg-background p-6 hover:border-foreground/20 transition-colors"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded bg-accent border border-border">
                   <feature.icon
@@ -299,8 +299,8 @@ export default function LandingPage() {
                 key={plan.name}
                 className={`rounded border p-8 flex flex-col ${
                   plan.highlighted
-                    ? "border-foreground bg-white relative"
-                    : "border-border bg-white"
+                    ? "border-foreground bg-background relative"
+                    : "border-border bg-background"
                 }`}
               >
                 {plan.highlighted && (
@@ -390,7 +390,7 @@ export default function LandingPage() {
             ].map((t) => (
               <div
                 key={t.author}
-                className="rounded border border-border bg-white p-6"
+                className="rounded border border-border bg-background p-6"
               >
                 <div className="flex gap-0.5 mb-4">
                   {[...Array(5)].map((_, i) => (
@@ -453,7 +453,7 @@ export default function LandingPage() {
             ].map((item) => (
               <div
                 key={item.q}
-                className="rounded border border-border bg-white p-6"
+                className="rounded border border-border bg-background p-6"
               >
                 <h3 className="text-sm font-semibold text-foreground">
                   {item.q}
@@ -480,7 +480,7 @@ export default function LandingPage() {
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2 rounded bg-white px-8 py-3.5 text-sm font-semibold text-foreground hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 rounded bg-primary-foreground px-8 py-3.5 text-sm font-semibold text-foreground hover:opacity-90 transition-opacity"
             >
               Démarrer maintenant
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
