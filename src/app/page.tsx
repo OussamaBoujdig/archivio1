@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   FileText,
   Shield,
@@ -41,6 +42,7 @@ export default function LandingPage() {
             </a>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link
               href="/dashboard"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
