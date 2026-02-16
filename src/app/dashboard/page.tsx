@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import {
   Archive,
   Clock,
@@ -8,12 +11,42 @@ import {
 } from "lucide-react";
 import { StatCard } from "@/components/stat-card";
 import { DocumentTable } from "@/components/document-table";
-import { documents, stats } from "@/lib/data";
 import { PlatformLayout } from "@/components/platform-layout";
 import Link from "next/link";
 
+interface DashboardData {
+  totalDocuments: number;
+  totalCategories: number;
+  totalStorageBytes: number;
+  totalStorageFormatted: string;
+  statusCounts: { "archivé": number; "en traitement": number; brouillon: number };
+  categoryCounts: { name: string; count: number }[];
+  recentDocuments: Array<{
+    id: string; title: string; category: string; type: string;
+    size: string; status: string; date: string; tags: string[];
+  }>;
+}
+
 export default function DashboardPage() {
-  const recentDocuments = documents.slice(0, 5);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [activities, setActivities] = useState<Array<{ id: string; action: string; target: string; createdAt: string }>>([]);
+
+  useEffect(() => {
+    fetch("/api/dashboard").then((r) => r.json()).then(setData).catch(() => {});
+    fetch("/api/activities").then((r) => r.json()).then((d) => setActivities(d.activities || [])).catch(() => {});
+  }, []);
+
+  if (!data) {
+    return (
+      <PlatformLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        </div>
+      </PlatformLayout>
+    );
+  }
+
+  const storagePercent = (data.totalStorageBytes / (50 * 1024 * 1024 * 1024)) * 100;
 
   return (
     <PlatformLayout>
@@ -30,23 +63,23 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total documents"
-            value={stats.totalDocuments}
-            subtitle="+3 ce mois"
+            value={data.totalDocuments}
+            subtitle={`${data.totalCategories} catégories`}
             icon={FileText}
           />
           <StatCard
             title="Archivés"
-            value={stats.archived}
+            value={data.statusCounts["archivé"]}
             icon={Archive}
           />
           <StatCard
-            title="En cours"
-            value={stats.inProgress}
+            title="En traitement"
+            value={data.statusCounts["en traitement"]}
             icon={Clock}
           />
           <StatCard
-            title="En attente"
-            value={stats.pending}
+            title="Brouillons"
+            value={data.statusCounts.brouillon}
             icon={Hourglass}
           />
         </div>
@@ -57,34 +90,22 @@ export default function DashboardPage() {
               <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                 Activité récente
               </h2>
-              <span className="text-xs text-muted-foreground">
-                Derniers 30 jours
-              </span>
             </div>
-            <div className="space-y-4">
-              {[
-                { month: "Oct", value: 15 },
-                { month: "Nov", value: 22 },
-                { month: "Déc", value: 18 },
-                { month: "Jan", value: 30 },
-                { month: "Fév", value: 12 },
-              ].map((item) => (
-                <div key={item.month} className="flex items-center gap-3">
-                  <span className="w-8 text-xs text-muted-foreground">
-                    {item.month}
-                  </span>
-                  <div className="flex-1 h-5 bg-accent rounded">
-                    <div
-                      className="h-5 bg-foreground/10 rounded flex items-center px-2"
-                      style={{ width: `${(item.value / 30) * 100}%` }}
-                    >
-                      <span className="text-xs font-medium text-foreground">
-                        {item.value}
-                      </span>
-                    </div>
+            <div className="space-y-3">
+              {activities.slice(0, 8).map((act) => (
+                <div key={act.id} className="flex items-center justify-between border-b border-border pb-3 last:border-b-0 last:pb-0">
+                  <div>
+                    <p className="text-sm text-foreground">{act.action}</p>
+                    <p className="text-xs text-muted-foreground">{act.target}</p>
                   </div>
+                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-4">
+                    {formatTimeAgo(act.createdAt)}
+                  </span>
                 </div>
               ))}
+              {activities.length === 0 && (
+                <p className="text-sm text-muted-foreground">Aucune activité récente</p>
+              )}
             </div>
           </div>
 
@@ -102,17 +123,17 @@ export default function DashboardPage() {
                   <span className="text-sm text-muted-foreground">Stockage</span>
                 </div>
                 <span className="text-sm font-semibold text-foreground">
-                  {stats.storageUsed}
+                  {data.totalStorageFormatted}
                 </span>
               </div>
               <div className="h-1 w-full rounded-full bg-accent">
                 <div
                   className="h-1 rounded-full bg-foreground"
-                  style={{ width: "0.04%" }}
+                  style={{ width: `${Math.max(storagePercent, 0.1)}%` }}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                {stats.storageUsed} utilisés sur {stats.storageTotal}
+                {data.totalStorageFormatted} utilisés sur 50 GB
               </p>
 
               <div className="border-t border-border pt-4">
@@ -126,13 +147,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {[
-                    { name: "Rapports", count: 4 },
-                    { name: "Contrats", count: 2 },
-                    { name: "Factures", count: 2 },
-                    { name: "Juridique", count: 2 },
-                    { name: "RH", count: 2 },
-                  ].map((cat) => (
+                  {data.categoryCounts.map((cat) => (
                     <div
                       key={cat.name}
                       className="flex items-center justify-between"
@@ -166,9 +181,20 @@ export default function DashboardPage() {
               Voir tout →
             </Link>
           </div>
-          <DocumentTable documents={recentDocuments} />
+          <DocumentTable documents={data.recentDocuments} />
         </div>
       </div>
     </PlatformLayout>
   );
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 60) return `Il y a ${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Il y a ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `Il y a ${days}j`;
+  return `Il y a ${Math.floor(days / 7)}sem`;
 }

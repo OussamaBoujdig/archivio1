@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { DocumentTable } from "@/components/document-table";
-import { documents } from "@/lib/data";
+import type { TableDocument } from "@/components/document-table";
 import { Search, SlidersHorizontal, Plus } from "lucide-react";
 import Link from "next/link";
 import { PlatformLayout } from "@/components/platform-layout";
+import { useSearchParams } from "next/navigation";
 
-const statusFilters = ["Tous", "Archivé", "En cours", "En attente"];
+const statusFilters = ["Tous", "archivé", "en traitement", "brouillon"];
 const categoryFilters = [
   "Toutes",
   "Rapports",
@@ -18,25 +19,48 @@ const categoryFilters = [
 ];
 
 export default function DocumentsPage() {
-  const [search, setSearch] = useState("");
+  return (
+    <Suspense fallback={<PlatformLayout><div className="flex items-center justify-center h-64"><p className="text-sm text-muted-foreground">Chargement...</p></div></PlatformLayout>}>
+      <DocumentsPageInner />
+    </Suspense>
+  );
+}
+
+function DocumentsPageInner() {
+  const searchParams = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") || "");
   const [statusFilter, setStatusFilter] = useState("Tous");
   const [categoryFilter, setCategoryFilter] = useState("Toutes");
+  const [documents, setDocuments] = useState<TableDocument[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = documents.filter((doc) => {
-    const matchesSearch =
-      doc.title.toLowerCase().includes(search.toLowerCase()) ||
-      doc.id.toLowerCase().includes(search.toLowerCase()) ||
-      doc.author.toLowerCase().includes(search.toLowerCase());
+  const fetchDocuments = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    if (statusFilter !== "Tous") params.set("status", statusFilter);
+    if (categoryFilter !== "Toutes") params.set("category", categoryFilter);
 
-    const matchesStatus =
-      statusFilter === "Tous" ||
-      doc.status === statusFilter.toLowerCase();
+    try {
+      const res = await fetch(`/api/documents?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data.documents || []);
+      }
+    } catch { /* ignore */ }
+    setLoading(false);
+  }, [search, statusFilter, categoryFilter]);
 
-    const matchesCategory =
-      categoryFilter === "Toutes" || doc.category === categoryFilter;
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer ce document ?")) return;
+    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    }
+  };
 
   return (
     <PlatformLayout>
@@ -66,7 +90,7 @@ export default function DocumentsPage() {
             />
             <input
               type="text"
-              placeholder="Rechercher par titre, ID ou auteur..."
+              placeholder="Rechercher par titre ou tag..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 w-full rounded border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground"
@@ -85,7 +109,7 @@ export default function DocumentsPage() {
             >
               {statusFilters.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {s === "Tous" ? "Tous" : s.charAt(0).toUpperCase() + s.slice(1)}
                 </option>
               ))}
             </select>
@@ -106,12 +130,11 @@ export default function DocumentsPage() {
 
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {filtered.length} document{filtered.length !== 1 ? "s" : ""} trouvé
-          {filtered.length !== 1 ? "s" : ""}
+          {loading ? "Chargement..." : `${documents.length} document${documents.length !== 1 ? "s" : ""} trouvé${documents.length !== 1 ? "s" : ""}`}
         </p>
       </div>
 
-      <DocumentTable documents={filtered} />
+      <DocumentTable documents={documents} onDelete={handleDelete} />
     </div>
     </PlatformLayout>
   );

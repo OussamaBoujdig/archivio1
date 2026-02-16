@@ -1,20 +1,31 @@
 "use client";
 
-import { type Document } from "@/lib/data";
-import { FileText, Eye, Download, MoreHorizontal } from "lucide-react";
+import { FileText, Eye, Download, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-interface DocumentTableProps {
-  documents: Document[];
-  showActions?: boolean;
+export interface TableDocument {
+  id: string;
+  title: string;
+  category: string;
+  type: string;
+  size: string;
+  status: string;
+  date: string;
+  tags?: string[];
 }
 
-function StatusBadge({ status }: { status: Document["status"] }) {
-  const styles = {
-    archivé: "bg-accent text-foreground border-border",
-    "en cours": "bg-accent text-foreground border-border",
-    "en attente": "bg-background text-muted-foreground border-border",
+interface DocumentTableProps {
+  documents: TableDocument[];
+  showActions?: boolean;
+  onDelete?: (id: string) => void;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    "archivé": "bg-accent text-foreground border-border",
+    "en traitement": "bg-accent text-foreground border-border",
+    "brouillon": "bg-background text-muted-foreground border-border",
   };
 
   return (
@@ -37,6 +48,7 @@ function TypeBadge({ type }: { type: string }) {
 export function DocumentTable({
   documents,
   showActions = true,
+  onDelete,
 }: DocumentTableProps) {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
@@ -59,9 +71,6 @@ export function DocumentTable({
             </th>
             <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Date
-            </th>
-            <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Auteur
             </th>
             <th className="px-4 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
               Statut
@@ -108,7 +117,6 @@ export function DocumentTable({
               <td className="px-4 py-2.5 text-muted-foreground">
                 {new Date(doc.date).toLocaleDateString("fr-FR")}
               </td>
-              <td className="px-4 py-2.5 text-muted-foreground">{doc.author}</td>
               <td className="px-4 py-2.5">
                 <StatusBadge status={doc.status} />
               </td>
@@ -139,15 +147,18 @@ export function DocumentTable({
                     </button>
                     {openMenu === doc.id && (
                       <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded border border-border bg-background py-1">
-                        <button className="flex w-full items-center px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors">
-                          Renommer
-                        </button>
-                        <button className="flex w-full items-center px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors">
-                          Déplacer
-                        </button>
-                        <button className="flex w-full items-center px-3 py-1.5 text-sm text-destructive hover:bg-accent transition-colors">
-                          Supprimer
-                        </button>
+                        <Link href={`/documents/${doc.id}`} className="flex w-full items-center px-3 py-1.5 text-sm text-foreground hover:bg-accent transition-colors">
+                          Voir le détail
+                        </Link>
+                        {onDelete && (
+                          <button
+                            onClick={() => { onDelete(doc.id); setOpenMenu(null); }}
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-destructive hover:bg-accent transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                            Supprimer
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

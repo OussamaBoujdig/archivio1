@@ -1,5 +1,7 @@
-import { documents } from "@/lib/data";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlatformLayout } from "@/components/platform-layout";
 import {
@@ -9,25 +11,87 @@ import {
   FileText,
   Folder,
   Tag,
-  User,
+  Trash2,
+  RefreshCw,
 } from "lucide-react";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
+interface DocDetail {
+  id: string;
+  title: string;
+  category: string;
+  type: string;
+  size: string;
+  status: string;
+  date: string;
+  tags: string[];
+  description: string;
+  fileName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default async function DocumentDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  const doc = documents.find((d) => d.id === id);
+export default function DocumentDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [doc, setDoc] = useState<DocDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!doc) {
-    notFound();
+  useEffect(() => {
+    fetch(`/api/documents/${id}`)
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then((d) => setDoc(d.document))
+      .catch(() => setDoc(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const handleDelete = async () => {
+    if (!confirm("Supprimer ce document définitivement ?")) return;
+    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    if (res.ok) router.push("/documents");
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    const res = await fetch(`/api/documents/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setDoc(data.document);
+    }
+  };
+
+  if (loading) {
+    return (
+      <PlatformLayout>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        </div>
+      </PlatformLayout>
+    );
   }
 
-  const statusStyles = {
-    archivé: "bg-accent text-foreground border-border",
-    "en cours": "bg-accent text-foreground border-border",
-    "en attente": "bg-background text-muted-foreground border-border",
+  if (!doc) {
+    return (
+      <PlatformLayout>
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-sm text-muted-foreground">Document introuvable</p>
+          <Link href="/documents" className="text-sm text-foreground hover:underline">
+            ← Retour aux documents
+          </Link>
+        </div>
+      </PlatformLayout>
+    );
+  }
+
+  const statusStyles: Record<string, string> = {
+    "archivé": "bg-accent text-foreground border-border",
+    "en traitement": "bg-accent text-foreground border-border",
+    "brouillon": "bg-background text-muted-foreground border-border",
   };
 
   return (
@@ -42,7 +106,7 @@ export default async function DocumentDetailPage({ params }: PageProps) {
         </Link>
         <div>
           <h1 className="text-xl font-semibold text-foreground">{doc.title}</h1>
-          <p className="text-sm text-muted-foreground">{doc.id}</p>
+          <p className="text-sm text-muted-foreground">{doc.fileName}</p>
         </div>
       </div>
 
@@ -69,15 +133,34 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   <Download className="h-4 w-4" strokeWidth={1.5} />
                   Télécharger
                 </button>
-                <button className="flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors">
-                  Partager
-                </button>
-                <button className="flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-medium text-destructive hover:bg-accent transition-colors">
+                {doc.status !== "archivé" && (
+                  <button
+                    onClick={() => handleStatusChange("archivé")}
+                    className="flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
+                    Archiver
+                  </button>
+                )}
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-medium text-destructive hover:bg-accent transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                   Supprimer
                 </button>
               </div>
             </div>
           </div>
+
+          {doc.description && (
+            <div className="rounded border border-border bg-background p-5">
+              <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                Description
+              </h2>
+              <p className="text-sm text-foreground leading-relaxed">{doc.description}</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
@@ -95,18 +178,6 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   <p className="text-xs text-muted-foreground">Catégorie</p>
                   <p className="text-sm font-medium text-foreground">
                     {doc.category}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <User
-                  className="mt-0.5 h-4 w-4 text-muted-foreground"
-                  strokeWidth={1.5}
-                />
-                <div>
-                  <p className="text-xs text-muted-foreground">Auteur</p>
-                  <p className="text-sm font-medium text-foreground">
-                    {doc.author}
                   </p>
                 </div>
               </div>
@@ -140,6 +211,22 @@ export default async function DocumentDetailPage({ params }: PageProps) {
                   </p>
                 </div>
               </div>
+              <div className="flex items-start gap-3">
+                <Calendar
+                  className="mt-0.5 h-4 w-4 text-muted-foreground"
+                  strokeWidth={1.5}
+                />
+                <div>
+                  <p className="text-xs text-muted-foreground">Dernière modification</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {new Date(doc.updatedAt).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -147,11 +234,15 @@ export default async function DocumentDetailPage({ params }: PageProps) {
             <h2 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-4">
               Statut
             </h2>
-            <span
-              className={`inline-flex items-center rounded px-2.5 py-1 text-xs font-medium border ${statusStyles[doc.status]}`}
+            <select
+              value={doc.status}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="h-8 rounded border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-foreground"
             >
-              {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-            </span>
+              <option value="brouillon">Brouillon</option>
+              <option value="en traitement">En traitement</option>
+              <option value="archivé">Archivé</option>
+            </select>
           </div>
 
           <div className="rounded border border-border bg-background p-5">

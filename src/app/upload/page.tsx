@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Upload, FileText, X, Check } from "lucide-react";
 import { PlatformLayout } from "@/components/platform-layout";
+import { useRouter } from "next/navigation";
 
 interface UploadedFile {
   name: string;
   size: string;
+  sizeBytes: number;
   type: string;
 }
 
@@ -15,7 +17,18 @@ export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState("");
+  const [description, setDescription] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => {});
+  }, []);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -23,7 +36,8 @@ export default function UploadPage() {
     const droppedFiles = Array.from(e.dataTransfer.files);
     const newFiles = droppedFiles.map((f) => ({
       name: f.name,
-      size: `${(f.size / 1024).toFixed(0)} KB`,
+      size: f.size > 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${(f.size / 1024).toFixed(0)} KB`,
+      sizeBytes: f.size,
       type: f.name.split(".").pop()?.toUpperCase() || "UNKNOWN",
     }));
     setFiles((prev) => [...prev, ...newFiles]);
@@ -34,7 +48,8 @@ export default function UploadPage() {
       const selectedFiles = Array.from(e.target.files);
       const newFiles = selectedFiles.map((f) => ({
         name: f.name,
-        size: `${(f.size / 1024).toFixed(0)} KB`,
+        size: f.size > 1048576 ? `${(f.size / 1048576).toFixed(1)} MB` : `${(f.size / 1024).toFixed(0)} KB`,
+        sizeBytes: f.size,
         type: f.name.split(".").pop()?.toUpperCase() || "UNKNOWN",
       }));
       setFiles((prev) => [...prev, ...newFiles]);
@@ -43,6 +58,30 @@ export default function UploadPage() {
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async () => {
+    if (files.length === 0 || !title || !category) return;
+    setSubmitting(true);
+
+    for (const file of files) {
+      await fetch("/api/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: files.length === 1 ? title : `${title} - ${file.name}`,
+          category,
+          type: file.type,
+          fileName: file.name,
+          size: file.size,
+          sizeBytes: file.sizeBytes,
+          tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+          description,
+        }),
+      });
+    }
+
+    router.push("/documents");
   };
 
   return (
@@ -142,7 +181,7 @@ export default function UploadPage() {
             <div className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">
-                  Titre
+                  Titre *
                 </label>
                 <input
                   type="text"
@@ -154,7 +193,7 @@ export default function UploadPage() {
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">
-                  Catégorie
+                  Catégorie *
                 </label>
                 <select
                   value={category}
@@ -162,11 +201,9 @@ export default function UploadPage() {
                   className="h-8 w-full rounded border border-border bg-background px-2 text-sm text-foreground outline-none focus:border-foreground"
                 >
                   <option value="">Sélectionner</option>
-                  <option value="Rapports">Rapports</option>
-                  <option value="Contrats">Contrats</option>
-                  <option value="Factures">Factures</option>
-                  <option value="Juridique">Juridique</option>
-                  <option value="Ressources Humaines">Ressources Humaines</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -187,6 +224,8 @@ export default function UploadPage() {
                 </label>
                 <textarea
                   rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optionnel"
                   className="w-full rounded border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground resize-none"
                 />
@@ -195,11 +234,12 @@ export default function UploadPage() {
           </div>
 
           <button
+            onClick={handleSubmit}
+            disabled={files.length === 0 || !title || !category || submitting}
             className="flex w-full items-center justify-center gap-2 rounded bg-foreground px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-80 transition-opacity disabled:opacity-40"
-            disabled={files.length === 0}
           >
             <Check className="h-4 w-4" strokeWidth={1.5} />
-            Archiver {files.length > 0 ? `(${files.length} fichier${files.length > 1 ? "s" : ""})` : ""}
+            {submitting ? "Importation..." : `Archiver ${files.length > 0 ? `(${files.length} fichier${files.length > 1 ? "s" : ""})` : ""}`}
           </button>
         </div>
       </div>

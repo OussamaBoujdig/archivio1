@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Archive,
@@ -26,6 +27,19 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [storage, setStorage] = useState({ used: "0 B", percent: 0 });
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.totalStorageBytes !== undefined) {
+          const pct = (d.totalStorageBytes / (50 * 1024 * 1024 * 1024)) * 100;
+          setStorage({ used: d.totalStorageFormatted, percent: Math.max(pct, 0.1) });
+        }
+      })
+      .catch(() => {});
+  }, [pathname]);
 
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-background">
@@ -79,10 +93,10 @@ export function Sidebar({ onClose }: SidebarProps) {
           <div className="mt-2 h-1 w-full rounded-full bg-muted">
             <div
               className="h-1 rounded-full bg-foreground"
-              style={{ width: "0.04%" }}
+              style={{ width: `${storage.percent}%` }}
             />
           </div>
-          <p className="mt-1.5">20.8 MB / 50 GB</p>
+          <p className="mt-1.5">{storage.used} / 50 GB</p>
         </div>
       </div>
     </aside>

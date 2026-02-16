@@ -1,9 +1,11 @@
 "use client";
 
-import { Search, Bell, User, Sun, Moon, Menu } from "lucide-react";
-import { useState } from "react";
+import { Search, Bell, User, Sun, Moon, Menu, LogOut } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "@/components/theme-provider";
+import { useAuth } from "@/components/auth-provider";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -11,7 +13,32 @@ interface HeaderProps {
 
 export function Header({ onMenuToggle }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.unreadCount);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      router.push(`/documents?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-background px-4 md:px-6">
@@ -31,6 +58,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
             placeholder="Rechercher un document..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
             className="h-8 w-48 md:w-64 lg:w-80 rounded border border-border bg-background pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground"
           />
         </div>
@@ -54,9 +82,11 @@ export function Header({ onMenuToggle }: HeaderProps) {
 
         <button className="relative flex h-8 w-8 items-center justify-center rounded border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
           <Bell className="h-4 w-4" strokeWidth={1.5} />
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-primary-foreground">
-            3
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] font-medium text-primary-foreground">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
         </button>
 
         <div className="h-6 w-px bg-border hidden sm:block" />
@@ -66,10 +96,18 @@ export function Header({ onMenuToggle }: HeaderProps) {
             <User className="h-3.5 w-3.5" strokeWidth={1.5} />
           </div>
           <div className="text-sm hidden sm:block">
-            <p className="font-medium text-foreground leading-none">Admin</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Administrateur</p>
+            <p className="font-medium text-foreground leading-none">{user?.name || "Utilisateur"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{user?.role === "admin" ? "Administrateur" : "Utilisateur"}</p>
           </div>
         </Link>
+
+        <button
+          onClick={logout}
+          className="flex h-8 w-8 items-center justify-center rounded border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          title="Déconnexion"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.5} />
+        </button>
       </div>
     </header>
   );
