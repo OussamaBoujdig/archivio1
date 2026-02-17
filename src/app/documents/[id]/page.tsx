@@ -13,6 +13,7 @@ import {
   Tag,
   Trash2,
   RefreshCw,
+  Sparkles,
 } from "lucide-react";
 
 interface DocDetail {
@@ -35,6 +36,8 @@ export default function DocumentDetailPage() {
   const router = useRouter();
   const [doc, setDoc] = useState<DocDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState("");
+  const [summarizing, setSummarizing] = useState(false);
 
   useEffect(() => {
     fetch(`/api/documents/${id}`)
@@ -143,6 +146,26 @@ export default function DocumentDetailPage() {
                   </button>
                 )}
                 <button
+                  onClick={async () => {
+                    setSummarizing(true);
+                    try {
+                      const res = await fetch("/api/ai/summarize", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ documentId: doc.id }),
+                      });
+                      const data = await res.json();
+                      setSummary(data.summary || data.error || "Erreur");
+                    } catch { setSummary("Erreur de connexion"); }
+                    setSummarizing(false);
+                  }}
+                  disabled={summarizing}
+                  className="flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                  <Sparkles className="h-4 w-4" strokeWidth={1.5} />
+                  {summarizing ? "Analyse..." : "Résumer avec l'IA"}
+                </button>
+                <button
                   onClick={handleDelete}
                   className="flex items-center gap-2 rounded border border-border px-4 py-2 text-sm font-medium text-destructive hover:bg-accent transition-colors"
                 >
@@ -152,6 +175,16 @@ export default function DocumentDetailPage() {
               </div>
             </div>
           </div>
+
+          {summary && (
+            <div className="rounded border border-foreground/20 bg-accent p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+                <h2 className="text-[11px] font-medium uppercase tracking-wider text-foreground">Résumé IA</h2>
+              </div>
+              <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{summary}</div>
+            </div>
+          )}
 
           {doc.description && (
             <div className="rounded border border-border bg-background p-5">

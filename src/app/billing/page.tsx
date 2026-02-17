@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { CreditCard, Check, Zap, ArrowUpRight, FileText, HardDrive, Users, AlertTriangle } from "lucide-react";
 import { PlatformLayout } from "@/components/platform-layout";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 
 interface SubData {
@@ -66,25 +66,25 @@ function BillingPageInner() {
     }
   }, [showSuccess]);
 
-  const handleUpgrade = async (planId: string) => {
-    setUpgrading(planId);
-    try {
-      const res = await fetch("/api/stripe/checkout", {
+  const router = useRouter();
+
+  const handleUpgrade = (planId: string) => {
+    if (planId === "starter") {
+      // Downgrade to free — call API directly
+      setUpgrading(planId);
+      fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId, billingCycle }),
-      });
-      const result = await res.json();
-
-      if (result.url) {
-        window.location.href = result.url;
-      } else if (result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      } else if (result.success) {
-        window.location.reload();
-      }
-    } catch { /* ignore */ }
-    setUpgrading(null);
+      })
+        .then((r) => r.json())
+        .then(() => window.location.reload())
+        .catch(() => {})
+        .finally(() => setUpgrading(null));
+      return;
+    }
+    // Navigate to checkout page for paid plans
+    router.push(`/checkout?plan=${planId}&cycle=${billingCycle}`);
   };
 
   const handlePortal = async () => {

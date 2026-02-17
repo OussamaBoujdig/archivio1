@@ -12,6 +12,7 @@ import {
   FileText,
   X,
   CreditCard,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
@@ -20,6 +21,7 @@ const allNavigation = [
   { name: "Documents", href: "/documents", icon: Archive, adminOnly: false },
   { name: "Catégories", href: "/categories", icon: FolderOpen, adminOnly: true },
   { name: "Importer", href: "/upload", icon: Upload, adminOnly: false },
+  { name: "Assistant IA", href: "/assistant", icon: Bot, adminOnly: false },
   { name: "Facturation", href: "/billing", icon: CreditCard, adminOnly: false },
   { name: "Paramètres", href: "/settings", icon: Settings, adminOnly: false },
 ];

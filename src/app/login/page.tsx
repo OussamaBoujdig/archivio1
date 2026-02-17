@@ -112,17 +112,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mt-8 rounded border border-border p-4">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-2">
-            Compte démo
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Email: <span className="text-foreground font-medium">admin@entreprise.fr</span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Mot de passe: <span className="text-foreground font-medium">admin123</span>
-          </p>
-        </div>
+        
       </div>
     </div>
   );
