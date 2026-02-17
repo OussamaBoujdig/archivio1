@@ -7,6 +7,7 @@ import { Search, SlidersHorizontal, Plus } from "lucide-react";
 import Link from "next/link";
 import { PlatformLayout } from "@/components/platform-layout";
 import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/components/auth-provider";
 
 const statusFilters = ["Tous", "archivé", "en traitement", "brouillon"];
 const categoryFilters = [
@@ -27,6 +28,8 @@ export default function DocumentsPage() {
 }
 
 function DocumentsPageInner() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [statusFilter, setStatusFilter] = useState("Tous");
@@ -134,7 +137,7 @@ function DocumentsPageInner() {
         </p>
       </div>
 
-      <DocumentTable documents={documents} onDelete={handleDelete} />
+      <DocumentTable documents={documents} onDelete={isAdmin ? handleDelete : undefined} />
     </div>
     </PlatformLayout>
   );

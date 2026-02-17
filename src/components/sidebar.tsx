@@ -12,13 +12,14 @@ import {
   FileText,
   X,
 } from "lucide-react";
+import { useAuth } from "@/components/auth-provider";
 
-const navigation = [
-  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Documents", href: "/documents", icon: Archive },
-  { name: "Catégories", href: "/categories", icon: FolderOpen },
-  { name: "Importer", href: "/upload", icon: Upload },
-  { name: "Paramètres", href: "/settings", icon: Settings },
+const allNavigation = [
+  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
+  { name: "Documents", href: "/documents", icon: Archive, adminOnly: false },
+  { name: "Catégories", href: "/categories", icon: FolderOpen, adminOnly: true },
+  { name: "Importer", href: "/upload", icon: Upload, adminOnly: false },
+  { name: "Paramètres", href: "/settings", icon: Settings, adminOnly: false },
 ];
 
 interface SidebarProps {
@@ -27,11 +28,15 @@ interface SidebarProps {
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [storage, setStorage] = useState({ used: "0 B", percent: 0 });
+
+  const navigation = allNavigation.filter((item) => !item.adminOnly || isAdmin);
 
   useEffect(() => {
     fetch("/api/dashboard")
-      .then((r) => r.json())
+      .then((r) => { if (r.ok) return r.json(); throw 0; })
       .then((d) => {
         if (d.totalStorageBytes !== undefined) {
           const pct = (d.totalStorageBytes / (50 * 1024 * 1024 * 1024)) * 100;

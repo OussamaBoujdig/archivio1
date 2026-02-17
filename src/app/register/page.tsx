@@ -38,8 +38,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-accent px-4">
+      <div className="w-full max-w-sm rounded border border-border bg-background p-8">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <FileText className="h-6 w-6 text-foreground" strokeWidth={1.5} />

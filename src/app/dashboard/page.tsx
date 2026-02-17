@@ -32,8 +32,8 @@ export default function DashboardPage() {
   const [activities, setActivities] = useState<Array<{ id: string; action: string; target: string; createdAt: string }>>([]);
 
   useEffect(() => {
-    fetch("/api/dashboard").then((r) => r.json()).then(setData).catch(() => {});
-    fetch("/api/activities").then((r) => r.json()).then((d) => setActivities(d.activities || [])).catch(() => {});
+    fetch("/api/dashboard").then((r) => { if (r.ok) return r.json(); throw new Error(); }).then(setData).catch(() => {});
+    fetch("/api/activities").then((r) => { if (r.ok) return r.json(); throw new Error(); }).then((d) => setActivities(d.activities || [])).catch(() => {});
   }, []);
 
   if (!data) {

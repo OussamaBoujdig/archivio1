@@ -91,13 +91,13 @@ export function Header({ onMenuToggle }: HeaderProps) {
 
         <div className="h-6 w-px bg-border hidden sm:block" />
 
-        <Link href="/profile" className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity">
+        <Link href="/settings" className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-foreground">
             <User className="h-3.5 w-3.5" strokeWidth={1.5} />
           </div>
           <div className="text-sm hidden sm:block">
             <p className="font-medium text-foreground leading-none">{user?.name || "Utilisateur"}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{user?.role === "admin" ? "Administrateur" : "Utilisateur"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{user?.role === "admin" ? "Administrateur" : user?.role === "employé" ? "Employé" : "Utilisateur"}</p>
           </div>
         </Link>
 

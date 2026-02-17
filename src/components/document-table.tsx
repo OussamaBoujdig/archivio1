@@ -131,6 +131,7 @@ export function DocumentTable({
                       <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </Link>
                     <button
+                      onClick={() => alert(`Téléchargement de "${doc.title}" — fichier démo non disponible`)}
                       className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                       title="Télécharger"
                     >
