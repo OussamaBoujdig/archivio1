@@ -11,6 +11,7 @@ import {
   Settings,
   FileText,
   X,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
@@ -19,6 +20,7 @@ const allNavigation = [
   { name: "Documents", href: "/documents", icon: Archive, adminOnly: false },
   { name: "Catégories", href: "/categories", icon: FolderOpen, adminOnly: true },
   { name: "Importer", href: "/upload", icon: Upload, adminOnly: false },
+  { name: "Facturation", href: "/billing", icon: CreditCard, adminOnly: false },
   { name: "Paramètres", href: "/settings", icon: Settings, adminOnly: false },
 ];
 
@@ -30,18 +32,23 @@ export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const [storage, setStorage] = useState({ used: "0 B", percent: 0 });
+  const [storage, setStorage] = useState({ used: "0 B", limit: "500 MB", percent: 0 });
+  const [planName, setPlanName] = useState("");
 
   const navigation = allNavigation.filter((item) => !item.adminOnly || isAdmin);
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    fetch("/api/subscription")
       .then((r) => { if (r.ok) return r.json(); throw 0; })
       .then((d) => {
-        if (d.totalStorageBytes !== undefined) {
-          const pct = (d.totalStorageBytes / (50 * 1024 * 1024 * 1024)) * 100;
-          setStorage({ used: d.totalStorageFormatted, percent: Math.max(pct, 0.1) });
+        if (d.usage?.storage) {
+          setStorage({
+            used: d.usage.storage.usedFormatted,
+            limit: d.usage.storage.limitFormatted,
+            percent: Math.max(d.usage.storage.percent, 0.1),
+          });
         }
+        if (d.plan?.name) setPlanName(d.plan.name);
       })
       .catch(() => {});
   }, [pathname]);
@@ -92,7 +99,13 @@ export function Sidebar({ onClose }: SidebarProps) {
         </ul>
       </nav>
 
-      <div className="border-t border-border px-4 py-4">
+      <div className="border-t border-border px-4 py-4 space-y-3">
+        {planName && (
+          <Link href="/billing" className="flex items-center justify-between rounded bg-accent px-3 py-2 hover:opacity-80 transition-opacity">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Plan</span>
+            <span className="text-xs font-semibold text-foreground">{planName}</span>
+          </Link>
+        )}
         <div className="text-xs text-muted-foreground">
           <p className="text-[11px] font-medium uppercase tracking-wider">Stockage</p>
           <div className="mt-2 h-1 w-full rounded-full bg-muted">
@@ -101,7 +114,7 @@ export function Sidebar({ onClose }: SidebarProps) {
               style={{ width: `${storage.percent}%` }}
             />
           </div>
-          <p className="mt-1.5">{storage.used} / 50 GB</p>
+          <p className="mt-1.5">{storage.used} / {storage.limit}</p>
         </div>
       </div>
     </aside>

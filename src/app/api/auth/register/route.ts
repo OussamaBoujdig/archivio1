@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUserByEmail, createUser } from "@/lib/db";
+import { getUserByEmail, createUser, createSubscription } from "@/lib/db";
 import { hashPassword, generateId, createUserSession, setSessionCookie } from "@/lib/auth";
 import { createActivity, createNotification } from "@/lib/db";
 import { seedDatabase } from "@/lib/seed";
@@ -54,6 +54,24 @@ export async function POST(req: NextRequest) {
     message: "Bienvenue sur Archivist. Commencez par importer vos premiers documents.",
     read: false,
     createdAt: new Date().toISOString(),
+  });
+
+  // Create default free subscription
+  const now = new Date();
+  createSubscription({
+    id: generateId(),
+    userId,
+    planId: "starter",
+    status: "active",
+    billingCycle: "monthly",
+    stripeCustomerId: "",
+    stripeSubscriptionId: "",
+    currentPeriodStart: now.toISOString(),
+    currentPeriodEnd: new Date(now.getTime() + 30 * 86400000).toISOString(),
+    cancelAtPeriodEnd: false,
+    trialEnd: null,
+    createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
   });
 
   return NextResponse.json({

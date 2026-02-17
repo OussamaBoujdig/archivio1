@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDocuments, createDocument, searchDocuments, createActivity, createNotification } from "@/lib/db";
 import { getCurrentUser, generateId } from "@/lib/auth";
 import { seedDatabase } from "@/lib/seed";
+import { checkDocumentLimit, checkStorageLimit } from "@/lib/limits";
 
 export async function GET(req: NextRequest) {
   seedDatabase();
@@ -36,6 +37,16 @@ export async function POST(req: NextRequest) {
 
   if (!title || !category) {
     return NextResponse.json({ error: "Titre et catégorie requis" }, { status: 400 });
+  }
+
+  const docLimit = checkDocumentLimit(user.id);
+  if (!docLimit.allowed) {
+    return NextResponse.json({ error: docLimit.reason, upgrade: true }, { status: 403 });
+  }
+
+  const storageLimit = checkStorageLimit(user.id, sizeBytes || 0);
+  if (!storageLimit.allowed) {
+    return NextResponse.json({ error: storageLimit.reason, upgrade: true }, { status: 403 });
   }
 
   const docId = generateId();

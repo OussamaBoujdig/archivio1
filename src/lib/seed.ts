@@ -135,11 +135,31 @@ export function seedDatabase() {
     if (existing.length > 0) return false;
   }
 
+  const subscriptions = [
+    {
+      id: id(),
+      userId: adminId,
+      planId: "starter",
+      status: "active",
+      billingCycle: "monthly",
+      stripeCustomerId: "",
+      stripeSubscriptionId: "",
+      currentPeriodStart: daysAgo(30),
+      currentPeriodEnd: new Date(Date.now() + 30 * 86400000).toISOString(),
+      cancelAtPeriodEnd: false,
+      trialEnd: null,
+      createdAt: daysAgo(90),
+      updatedAt: now,
+    },
+  ];
+
   fs.writeFileSync(path.join(DATA_DIR, "users.json"), JSON.stringify(users, null, 2));
   fs.writeFileSync(path.join(DATA_DIR, "documents.json"), JSON.stringify(documents, null, 2));
   fs.writeFileSync(path.join(DATA_DIR, "categories.json"), JSON.stringify(categories, null, 2));
   fs.writeFileSync(path.join(DATA_DIR, "activities.json"), JSON.stringify(activities, null, 2));
   fs.writeFileSync(path.join(DATA_DIR, "notifications.json"), JSON.stringify(notifications, null, 2));
+  fs.writeFileSync(path.join(DATA_DIR, "subscriptions.json"), JSON.stringify(subscriptions, null, 2));
+  fs.writeFileSync(path.join(DATA_DIR, "invoices.json"), JSON.stringify([]));
   fs.writeFileSync(path.join(DATA_DIR, "sessions.json"), JSON.stringify([]));
 
   return true;

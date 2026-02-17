@@ -53,6 +53,35 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface Subscription {
+  id: string;
+  userId: string;
+  planId: "starter" | "pro" | "enterprise";
+  status: "active" | "trialing" | "past_due" | "canceled" | "incomplete";
+  billingCycle: "monthly" | "yearly";
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  trialEnd: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  userId: string;
+  subscriptionId: string;
+  stripeInvoiceId: string;
+  amountPaid: number;
+  currency: string;
+  status: "paid" | "open" | "void" | "draft";
+  description: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
 export interface Session {
   token: string;
   userId: string;

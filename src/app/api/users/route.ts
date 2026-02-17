@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUsers, createUser, createActivity, createNotification } from "@/lib/db";
 import { getCurrentUser, generateId, hashPassword } from "@/lib/auth";
 import { seedDatabase } from "@/lib/seed";
+import { checkUserLimit } from "@/lib/limits";
 
 export async function GET() {
   seedDatabase();
@@ -36,6 +37,11 @@ export async function POST(req: NextRequest) {
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Nom, email et mot de passe requis" }, { status: 400 });
+  }
+
+  const userLimit = checkUserLimit(user.id);
+  if (!userLimit.allowed) {
+    return NextResponse.json({ error: userLimit.reason, upgrade: true }, { status: 403 });
   }
 
   const { getUserByEmail } = await import("@/lib/db");

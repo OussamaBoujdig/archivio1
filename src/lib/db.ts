@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { User, Document, Category, Activity, Notification, Session } from "./types";
+import type { User, Document, Category, Activity, Notification, Subscription, Invoice, Session } from "./types";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 
@@ -222,6 +222,53 @@ export function cleanExpiredSessions(): void {
   const now = new Date();
   const sessions = getSessions().filter((s) => new Date(s.expiresAt) > now);
   writeJSON("sessions.json", sessions);
+}
+
+// ─── Subscriptions ───────────────────────────────────────
+export function getSubscriptions(): Subscription[] {
+  return readJSON<Subscription>("subscriptions.json");
+}
+
+export function getSubscriptionByUserId(userId: string): Subscription | undefined {
+  return getSubscriptions().find((s) => s.userId === userId);
+}
+
+export function createSubscription(sub: Subscription): Subscription {
+  const subs = getSubscriptions();
+  subs.push(sub);
+  writeJSON("subscriptions.json", subs);
+  return sub;
+}
+
+export function updateSubscription(id: string, data: Partial<Subscription>): Subscription | undefined {
+  const subs = getSubscriptions();
+  const index = subs.findIndex((s) => s.id === id);
+  if (index === -1) return undefined;
+  subs[index] = { ...subs[index], ...data, updatedAt: new Date().toISOString() };
+  writeJSON("subscriptions.json", subs);
+  return subs[index];
+}
+
+export function getSubscriptionByStripeId(stripeSubId: string): Subscription | undefined {
+  return getSubscriptions().find((s) => s.stripeSubscriptionId === stripeSubId);
+}
+
+export function getSubscriptionByStripeCustomer(customerId: string): Subscription | undefined {
+  return getSubscriptions().find((s) => s.stripeCustomerId === customerId);
+}
+
+// ─── Invoices ────────────────────────────────────────────
+export function getInvoices(userId: string): Invoice[] {
+  return readJSON<Invoice>("invoices.json")
+    .filter((i) => i.userId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export function createInvoice(invoice: Invoice): Invoice {
+  const invoices = readJSON<Invoice>("invoices.json");
+  invoices.unshift(invoice);
+  writeJSON("invoices.json", invoices);
+  return invoice;
 }
 
 // ─── Dashboard Stats ─────────────────────────────────────

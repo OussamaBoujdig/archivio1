@@ -44,7 +44,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Link
-              href="/dashboard"
+              href="/login"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Connexion
@@ -342,7 +342,7 @@ export default function LandingPage() {
                 </ul>
 
                 <Link
-                  href="/dashboard"
+                  href="/register"
                   className={`mt-8 flex items-center justify-center rounded px-4 py-3 text-sm font-semibold transition-opacity ${
                     plan.highlighted
                       ? "bg-foreground text-primary-foreground hover:opacity-80"
@@ -481,7 +481,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/dashboard"
+              href="/register"
               className="flex items-center gap-2 rounded bg-primary-foreground px-8 py-3.5 text-sm font-semibold text-foreground hover:opacity-90 transition-opacity"
             >
               Démarrer maintenant
